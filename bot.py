@@ -1,29 +1,24 @@
 import json
 import os
-import threading
-import requests
-from time import sleep
-from flask import Flask
-from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
-from telegram.error import Conflict
+from flask import Flask, request
+from telegram import Update, Bot, ReplyKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
 # Инициализация Flask сервера
 server = Flask(__name__)
-
-@server.route('/')
-def home():
-    return "Bot is running!"
 
 # Загрузка базы FAQ
 with open("faq.json", encoding="utf-8") as f:
     faq_data = json.load(f)
 
-# Инициализация Telegram бота
-token = os.getenv("TELEGRAM_BOT_TOKEN", "8163235507:AAGWWz1guEqNBQdH6lHNRxGQXl4KyoHia4I")
-app = ApplicationBuilder().token(token).build()
+# Получаем токен и создаём бота
+TOKEN = os.getenv("8163235507:AAGWWz1guEqNBQdH6lHNRxGQXl4KyoHia4I")
+WEBHOOK_URL = os.getenv("https://tg-bot-spbute.onrender.com")  # Пример: https://tg-bot-spbute.onrender.com
 
-# /start команда
+bot = Bot(token=TOKEN)
+application = ApplicationBuilder().token(TOKEN).build()
+
+# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [["Направления", "Сроки"],
                 ["Вступительные", "Стоимость"],
@@ -34,7 +29,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
-# Поиск ответа по ключевым словам
+# Обработка сообщений
 def find_answer(user_message):
     text = user_message.lower()
     for item in faq_data:
@@ -42,33 +37,29 @@ def find_answer(user_message):
             return item["answer"]
     return "Пожалуйста, уточните вопрос или выберите тему из меню."
 
-# Обработка сообщений
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
     response = find_answer(user_message)
     await update.message.reply_text(response)
 
-# Функция для поддержания активности
-def keep_alive():
-    while True:
-        try:
-            requests.get("https://tg-bot-spbute.onrender.com")
-        except:
-            pass
-        sleep(300)
+# Flask обрабатывает POST-запросы от Telegram
+@server.route(f'/{TOKEN}', methods=['POST'])
+async def webhook():
+    update = Update.de_json(request.get_json(force=True), bot)
+    await application.process_update(update)
+    return "ok"
 
-# Функция для запуска бота
-def run_bot():
-    try:
-        # Добавляем обработчики
-        app.add_handler(CommandHandler("start", start))
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
-        app.run_polling()
-    except Conflict:
-        print("⚠️ Бот уже запущен в другом месте!")
+# Установка webhook вручную (один раз)
+@server.route('/set_webhook', methods=['GET'])
+def set_webhook():
+    bot.set_webhook(f"{WEBHOOK_URL}/{TOKEN}")
+    return "Webhook установлен"
 
+# Добавляем обработчики
+application.add_handler(CommandHandler("start", start))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
+
+# Запускаем сервер
 if __name__ == '__main__':
-    # Запускаем все компоненты
-    threading.Thread(target=keep_alive, daemon=True).start()
-    threading.Thread(target=run_bot, daemon=True).start()
-    server.run(host='0.0.0.0', port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    server.run(host='0.0.0.0', port=port)

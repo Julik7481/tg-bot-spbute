@@ -9,6 +9,19 @@ import threading
 import requests
 import threading
 from time import sleep
+from telegram.ext import CommandHandler
+from threading import Thread
+
+def run_bot():
+    app.run_polling()
+
+Thread(target=run_bot).start()  # Отдельный поток для бота
+server.run(host='0.0.0.0', port=8000)  # Основной поток для Flask
+
+async def start(update, context):
+    await update.message.reply_text("Привет! Я работаю!")
+
+app.add_handler(CommandHandler("start", start))  # Регистрация обработчика
 
 def keep_alive():
     while True:

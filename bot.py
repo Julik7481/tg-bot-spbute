@@ -14,7 +14,7 @@ def keep_alive():
     while True:
         try:
             # Замените URL на ваш (например, https://tg-bot-spbute.onrender.com)
-            requests.get("https://your-render-url.onrender.com")
+            requests.get("https://tg-bot-spbute.onrender.com")
         except:
             pass
         sleep(300)  # Пинг каждые 5 минут

@@ -33,7 +33,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(response)
 
 # Запуск
-app = ApplicationBuilder().token(os.getenv("7689662719:AAHvUAovxVMFJmbBTpCjRFZBbg4cs42Ievw")).build()
+app = ApplicationBuilder().token(os.getenv("YOUR_BOT_TOKEN")).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
 app.run_polling()

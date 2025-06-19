@@ -6,7 +6,21 @@ from flask import Flask
 import threading
 from telegram.error import Conflict
 import threading
+import requests
+import threading
+from time import sleep
 
+def keep_alive():
+    while True:
+        try:
+            # Замените URL на ваш (например, https://tg-bot-spbute.onrender.com)
+            requests.get("https://your-render-url.onrender.com")
+        except:
+            pass
+        sleep(300)  # Пинг каждые 5 минут
+
+# Запускаем в отдельном потоке
+threading.Thread(target=keep_alive, daemon=True).start()
 def run_bot():
     try:
         app.run_polling()

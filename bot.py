@@ -1,48 +1,26 @@
-import json
 import os
-from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
-from flask import Flask
-import threading
-from telegram.error import Conflict
 import threading
 import requests
-import threading
 from time import sleep
-from telegram.ext import CommandHandler
-from threading import Thread
+from flask import Flask
+from telegram import Update, ReplyKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.error import Conflict
 
-def run_bot():
-    app.run_polling()
+# Инициализация Flask сервера
+server = Flask(__name__)
 
-Thread(target=run_bot).start()  # Отдельный поток для бота
-server.run(host='0.0.0.0', port=8000)  # Основной поток для Flask
-
-async def start(update, context):
-    await update.message.reply_text("Привет! Я работаю!")
-
-app.add_handler(CommandHandler("start", start))  # Регистрация обработчика
-
-def keep_alive():
-    while True:
-        try:
-            # Замените URL на ваш (например, https://tg-bot-spbute.onrender.com)
-            requests.get("https://tg-bot-spbute.onrender.com")
-        except:
-            pass
-        sleep(300)  # Пинг каждые 5 минут
-
-# Запускаем в отдельном потоке
-threading.Thread(target=keep_alive, daemon=True).start()
-def run_bot():
-    try:
-        app.run_polling()
-    except Conflict:
-        print("⚠️ Бот уже запущен в другом месте!")
+@server.route('/')
+def home():
+    return "Bot is running!"
 
 # Загрузка базы FAQ
 with open("faq.json", encoding="utf-8") as f:
     faq_data = json.load(f)
+
+# Инициализация Telegram бота
+token = os.getenv("TELEGRAM_BOT_TOKEN", "8163235507:AAGWWz1guEqNBQdH6lHNRxGQXl4KyoHia4I")
+app = ApplicationBuilder().token(token).build()
 
 # /start команда
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -69,23 +47,27 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = find_answer(user_message)
     await update.message.reply_text(response)
 
+# Функция для поддержания активности
+def keep_alive():
+    while True:
+        try:
+            requests.get("https://tg-bot-spbute.onrender.com")
+        except:
+            pass
+        sleep(300)
+
 # Функция для запуска бота
 def run_bot():
-    token = os.getenv("TELEGRAM_BOT_TOKEN", "8163235507:AAGWWz1guEqNBQdH6lHNRxGQXl4KyoHia4I")
-    app = ApplicationBuilder().token(token).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
-    app.run_polling()
-
-# HTTP-сервер для Render
-server = Flask(__name__)
-
-@server.route('/')
-def home():
-    return "Bot is running!"
+    try:
+        # Добавляем обработчики
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
+        app.run_polling()
+    except Conflict:
+        print("⚠️ Бот уже запущен в другом месте!")
 
 if __name__ == '__main__':
-    # Запускаем бота в отдельном потоке
-    threading.Thread(target=run_bot).start()
-    # Запускаем Flask-сервер
+    # Запускаем все компоненты
+    threading.Thread(target=keep_alive, daemon=True).start()
+    threading.Thread(target=run_bot, daemon=True).start()
     server.run(host='0.0.0.0', port=8000)

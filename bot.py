@@ -58,7 +58,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Функция для запуска бота
 def run_bot():
-    token = os.getenv("TELEGRAM_BOT_TOKEN", "7637716156:AAEL8ACVDiSjaGfplu_Z1yk_wH7lgJDKt4U")
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "8163235507:AAGWWz1guEqNBQdH6lHNRxGQXl4KyoHia4I")
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
